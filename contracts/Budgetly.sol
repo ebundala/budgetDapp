@@ -58,6 +58,9 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
             require(amount > 0, "Invalid amount");
 
             IERC20(token).transferFrom(msg.sender, address(this), amount);
+            if (!isTokenStored(budget.tokens, token)) {
+                budget.tokens.push(token);
+            }
             budget.balances[token] += amount;
         }
         return true;
@@ -125,7 +128,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
         require(
-            totalBalance(budget) == 0,
+            _totalBalance(budget) == 0,
             "Cannot update release amount while balance is non-zero"
         );
         require(
@@ -134,6 +137,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         );
 
         budget.releaseAmount = newReleaseAmount;
+        
         return true;
     }
 
@@ -144,7 +148,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
         require(
-            totalBalance(budget) == 0,
+            _totalBalance(budget) == 0,
             "Cannot update release cycle while balance is non-zero"
         );
         require(
@@ -172,7 +176,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 totalReleaseAmount = cycles * budget.releaseAmount;
 
         // Get the available balance in the budget
-        uint256 availableBalance = totalBalance(budget);
+        uint256 availableBalance = _totalBalance(budget);
 
         // Release the lesser of totalReleaseAmount or availableBalance
         uint256 amountToRelease = (totalReleaseAmount < availableBalance)
@@ -215,7 +219,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         // Update the last release time
         budget.lastReleaseTime += (cycles * budget.releaseCycle);
-        budget.hasFunds = totalBalance(budget) > 0;
+        budget.hasFunds = _totalBalance(budget) > 0;
         return true;
     }
 
@@ -271,7 +275,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         // Calculate the total amount to release (ensure it's never a fraction)
         uint256 totalReleaseAmount = cycles * budget.releaseAmount;
         // Get the available balance in the budget
-        uint256 availableBalance = totalBalance(budget);
+        uint256 availableBalance = _totalBalance(budget);
         // Release the lesser of totalReleaseAmount or availableBalance
         return
             (totalReleaseAmount < availableBalance)
@@ -299,7 +303,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         return false;
     }
 
-    function totalBalance(
+    function _totalBalance(
         Budget storage budget
     ) internal view returns (uint256) {
         uint256 total = 0;
@@ -310,5 +314,11 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         return total;
+    }
+
+    function totalBalance(bytes32 budgetName) external view returns(uint256){
+        Budget storage budget = userBudgets[msg.sender][budgetName];
+        require(budget.initialized, "Budget not found");
+        return _totalBalance(budget);
     }
 }
