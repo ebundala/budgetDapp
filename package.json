@@ -8,7 +8,7 @@
     "hardhat": "^2.22.3"
   },
   "scripts": {
-    "test": "hardhat test --verbose",
+    "test": "REPORT_GAS=true npx hardhat test --verbose",
     "typechain":"hardhat typechain",
     "coverage":"hardhat coverage"
   },
