@@ -66,13 +66,13 @@ describe("Budget contract", () => {
     const { budgetContract, tokenAddress2 } = await loadFixture(
       deployContracts
     );
-    await budgetContract.whitelistToken(tokenAddress2, true);
+    await expect(budgetContract.whitelistToken(tokenAddress2, true)).to.emit(budgetContract,"TokenStatusChanged");
   });
   it("Should blacklist token", async () => {
     const { budgetContract, tokenAddress2 } = await loadFixture(
       deployContracts
     );
-    await budgetContract.whitelistToken(tokenAddress2, false);
+    await expect(budgetContract.whitelistToken(tokenAddress2, false)).to.emit(budgetContract,"TokenStatusChanged");
   });
 
   it("Should fail to lock non whitelisted token", async () => {
@@ -120,14 +120,14 @@ describe("Budget contract", () => {
 
     //test single whitelisted token
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     await time.increaseTo(BigInt((await timestamp) + BigInt(startDelta)));
     timestamp = await blockTimestamp();
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -208,14 +208,15 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress, tokenAddress1],
       [amount, amount + parseEther("1")],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
+
     await time.increaseTo(BigInt((await timestamp) + BigInt(startDelta)));
     timestamp = await blockTimestamp();
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -292,14 +293,14 @@ describe("Budget contract", () => {
 
     //test single whitelisted token
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle);
 
     const details = await budgetContract.getBudgetDetails(budgetName);
@@ -332,14 +333,14 @@ describe("Budget contract", () => {
 
     //test single whitelisted token
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress,tokenAddress1],
       [amount,amount+parseEther("1")],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle);
 
     const details = await budgetContract.getBudgetDetails(budgetName);
@@ -371,14 +372,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle+cycle+cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
       budgetName
@@ -406,14 +407,14 @@ describe("Budget contract", () => {
 
     //test single whitelisted token
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress,tokenAddress1],
       [amount,amount+parseEther("1")],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle+cycle+cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
       budgetName
@@ -444,14 +445,14 @@ describe("Budget contract", () => {
 
     timestamp = await blockTimestamp();
     await budgetContract.whitelistToken(tokenAddress2,true)
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress2],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     timestamp = await blockTimestamp()
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -464,12 +465,12 @@ describe("Budget contract", () => {
     );
     expect(releaseAmount+releaseAmount).to.equal(availableBalance);
 
-    await budgetContract.releaseFunds(budgetName,userAddress)
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw")
     expect(await budgetToken2.balanceOf(budgetContractAddress)).to.be.equal(parseEther("13"))
     expect( await budgetToken2.balanceOf(userAddress)).to.be.equal(parseEther("87"))
     timestamp = await blockTimestamp()
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress)
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw")
     expect(await budgetToken2.balanceOf(budgetContractAddress)).to.be.equal(parseEther("0"))
     expect(await budgetToken2.balanceOf(userAddress)).to.be.equal(parseEther("100"))
 
@@ -496,14 +497,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
    // timestamp = await blockTimestamp()
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -521,7 +522,7 @@ describe("Budget contract", () => {
     expect(await budgetToken.balanceOf(userAddress)).to.be.equal(parseEther("87"))
 
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress)
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw")
      expect(await budgetToken.balanceOf(budgetContractAddress)).to.be.equal(parseEther("0"))
      expect(await budgetToken.balanceOf(userAddress)).to.be.equal(parseEther("100"))
   });
@@ -547,14 +548,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
    // timestamp = await blockTimestamp()
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -567,12 +568,12 @@ describe("Budget contract", () => {
     );
     expect(parseEther("10")).to.equal(availableBalance);
 
-    await budgetContract.releaseFunds(budgetName,userAddress)
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw")
     expect(await budgetToken.balanceOf(budgetContractAddress)).to.be.equal(parseEther("13"))
     expect(await budgetToken.balanceOf(userAddress)).to.be.equal(parseEther("87"))
     timestamp = await blockTimestamp()
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress)
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw")
     expect(await budgetToken.balanceOf(budgetContractAddress)).to.be.equal(parseEther("0"))
     expect(await budgetToken.balanceOf(userAddress)).to.be.equal(parseEther("100"))
   });
@@ -602,14 +603,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -627,11 +628,11 @@ describe("Budget contract", () => {
 
     await budgetContract.updateReleaseAmount(budgetName,releaseAmount+parseEther("10"))
     timestamp = await blockTimestamp();
-    await budgetContract.topUpBudget(
+    await expect(budgetContract.topUpBudget(
       budgetName,
       [tokenAddress],
       [amount],
-    );
+    )).to.emit(budgetContract,"BudgetTopUp");
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -689,7 +690,7 @@ describe("Budget contract", () => {
     .to.revertedWith("Cannot update release amount while balance is non-zero")
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress);
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw");
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(parseEther("0"))
 
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(parseEther("0"))
@@ -741,14 +742,15 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
+
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(amount)
 
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
@@ -833,7 +835,7 @@ describe("Budget contract", () => {
     .to.revertedWith("Cannot update release amount while balance is non-zero")
     // timestamp = await blockTimestamp();
     // await time.increaseTo(BigInt(timestamp) + cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress);
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw");
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(parseEther("13"))
 
   
@@ -842,11 +844,12 @@ describe("Budget contract", () => {
 
     
     timestamp = await blockTimestamp();
-    await budgetContract.topUpBudget(
+    await expect(budgetContract.topUpBudget(
       budgetName,
       [tokenAddress,tokenAddress1],
       [releaseAmount,releaseAmount],
-    );
+    )).to.emit(budgetContract,"BudgetTopUp");
+
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(parseEther("23"))
 
     timestamp = await blockTimestamp();
@@ -886,14 +889,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress],
       [amount],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -911,11 +914,12 @@ describe("Budget contract", () => {
 
     await budgetContract.updateReleaseCycle(budgetName,cycle+cycle)
     timestamp = await blockTimestamp();
-    await budgetContract.topUpBudget(
+    await expect(budgetContract.topUpBudget(
       budgetName,
       [tokenAddress],
       [amount],
-    );
+    )).to.emit(budgetContract,"BudgetTopUp");
+
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + cycle+cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -952,14 +956,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress,tokenAddress1],
       [amount,amount+parseEther("1")],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -969,19 +973,23 @@ describe("Budget contract", () => {
 
     await expect(budgetContract.updateReleaseCycle(budgetName,cycle+cycle))
     .to.revertedWith("Cannot update release cycle while balance is non-zero")
+
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + cycle+cycle+cycle);
-    await budgetContract.releaseFunds(budgetName,userAddress);
+
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw");
+
     expect(await budgetToken.balanceOf(budgetContractAddress)).to.be.equal(parseEther("0"))
     expect(await budgetToken.balanceOf(userAddress)).to.be.equal(parseEther("100"))
 
     await budgetContract.updateReleaseCycle(budgetName,cycle+cycle)
     timestamp = await blockTimestamp();
-    await budgetContract.topUpBudget(
+    await expect(budgetContract.topUpBudget(
       budgetName,
       [tokenAddress,tokenAddress1],
       [amount,amount+parseEther("1")]
-    );
+    )).to.emit(budgetContract,"BudgetTopUp");
+
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + cycle+cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -1018,14 +1026,14 @@ describe("Budget contract", () => {
     expect(parseEther("0")).to.equal(availableBalance);
 
     timestamp = await blockTimestamp();
-    await budgetContract.lockFunds(
+    await expect(budgetContract.lockFunds(
       budgetName,
       [tokenAddress,tokenAddress1],
       [amount,amount+parseEther("1")],
       cycle,
       timestamp + BigInt(startDelta),
       releaseAmount
-    );
+    )).to.emit(budgetContract,"BudgetCreated");
     
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
      availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -1033,7 +1041,7 @@ describe("Budget contract", () => {
     );
     expect(releaseAmount+releaseAmount).to.equal(availableBalance);
     expect(await budgetContract.totalBalance(budgetName)).to.be.equal(parseEther("23"))
-    await budgetContract.releaseFunds(budgetName,userAddress);
+    await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw");
     timestamp = await blockTimestamp();
     await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle);
     availableBalance = await budgetContract.getAvailableBalanceToRelease(
@@ -1050,8 +1058,117 @@ describe("Budget contract", () => {
 
 
   });
-  // it("Should get available balances corectly", async () => {});
-  
+  it("Should get allowed tokens", async () => {
+    const {
+      budgetContract,
+      tokenAddress,
+      tokenAddress1,
+      tokenAddress2,
+      blockTimestamp,
+      budgetName,
+      userAddress,
+      budgetToken,
+      budgetContractAddress
+    } = await loadFixture(deployContracts);
+    expect(await budgetContract.allowedTokens(tokenAddress)).to.be.equal(true)
+    expect(await budgetContract.allowedTokens(tokenAddress1)).to.be.equal(true)
+    expect(await budgetContract.allowedTokens(tokenAddress2)).to.be.equal(false)
+    expect(await budgetContract.allowedTokens(userAddress)).to.be.equal(false)
 
+  });
   
+it("Should fail to interact with disabled budget",async()=>{
+  const {
+    budgetContract,
+    tokenAddress,
+    tokenAddress1,
+    userAddress,
+    blockTimestamp,
+    budgetName,
+  } = await loadFixture(deployContracts);
+  const amount = hre.ethers.parseEther("11");
+  const releaseAmount = hre.ethers.parseEther("5");
+  const cycle = BigInt(200);
+  let timestamp = await blockTimestamp();
+  const startDelta = 100;
+  await time.increaseTo(BigInt((await timestamp) + BigInt(startDelta)));
+  let availableBalance = await budgetContract.getAvailableBalanceToRelease(
+    budgetName
+  );
+  expect(parseEther("0")).to.equal(availableBalance);
+
+  //test single whitelisted token
+  timestamp = await blockTimestamp();
+  await expect(budgetContract.lockFunds(
+    budgetName,
+    [tokenAddress,tokenAddress1],
+    [amount,amount+parseEther("1")],
+    cycle,
+    timestamp + BigInt(startDelta),
+    releaseAmount
+  )).to.emit(budgetContract,"BudgetCreated");
+
+  await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle+cycle+cycle);
+     availableBalance = await budgetContract.getAvailableBalanceToRelease(
+      budgetName
+    );
+
+await expect(budgetContract.changeBudgetStatus(budgetName,false)).to.emit(budgetContract,"BudgetStatusChanged")
+
+await expect(budgetContract.releaseFunds(budgetName,userAddress)).revertedWith("Budget is disabled");
+timestamp = await blockTimestamp();
+await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle+cycle+cycle+cycle);
+
+await expect(budgetContract.changeBudgetStatus(budgetName,true)).to.emit(budgetContract,"BudgetStatusChanged")
+await expect(budgetContract.releaseFunds(budgetName,userAddress)).to.emit(budgetContract,"BudgetWithdraw");
+await expect(budgetContract.changeBudgetStatus(budgetName,false)).to.emit(budgetContract,"BudgetStatusChanged")
+await expect(budgetContract.updateReleaseAmount(budgetName,100)).revertedWith("Budget is disabled");
+await expect(budgetContract.updateReleaseCycle(budgetName,100)).revertedWith("Budget is disabled");
+
+
+
+})
+
+  it("Should return all budgets by name", async()=>{
+    const {
+      budgetContract,
+      tokenAddress,
+      tokenAddress1,
+      tokenAddress2,
+      blockTimestamp,
+      budgetName,
+      userAddress,
+      budgetToken,
+      budgetContractAddress
+    } = await loadFixture(deployContracts);
+    const amount = hre.ethers.parseEther("11");
+    const releaseAmount = hre.ethers.parseEther("5");
+    const cycle = BigInt(200);
+    let timestamp = await blockTimestamp();
+    const startDelta = 100;
+    await time.increaseTo(BigInt((await timestamp) + BigInt(startDelta)));
+    let availableBalance = await budgetContract.getAvailableBalanceToRelease(
+      budgetName
+    );
+    expect(parseEther("0")).to.equal(availableBalance);
+
+    timestamp = await blockTimestamp();
+    await expect(budgetContract.lockFunds(
+      budgetName,
+      [tokenAddress,tokenAddress1],
+      [amount,amount+parseEther("1")],
+      cycle,
+      timestamp + BigInt(startDelta),
+      releaseAmount
+    )).to.emit(budgetContract,"BudgetCreated");
+    
+    await time.increaseTo(BigInt(timestamp) + BigInt(startDelta) + cycle+cycle);
+     availableBalance = await budgetContract.getAvailableBalanceToRelease(
+      budgetName
+    );
+    expect(releaseAmount+releaseAmount).to.equal(availableBalance);
+    const budgets = await budgetContract.getBudgets();
+    expect(budgets.length).to.be.equal(1)
+    expect(budgets.at(0)).to.be.equal(budgetName)
+  })
 });

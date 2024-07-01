@@ -15,14 +15,21 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 lastReleaseTime; //last time funds were releases in multiples of release cycles
         uint256 releaseAmount; // Fixed amount to release from the budget in each cycle
         bool initialized; // Flag to indicate if the budget is initialized
+        bool status;
         bool hasFunds; // flag the budget if its empty
         address[] tokens; // List of tokens stored in the budget
     }
 
     mapping(address => mapping(bytes32 => Budget)) public userBudgets; // userAddress => budgetName => Budget
-
+    mapping(address=>bytes32[]) private userBudgetNames;
     mapping(address => bool) public allowedTokens; //allowed stable coins
-
+    
+    event TokenStatusChanged(address indexed token,bool status);
+    event BudgetCreated(address indexed owner,bytes32 budgetName);
+    event BudgetTopUp(address indexed owner,bytes32 budgetName,uint256 amount);
+    event BudgetWithdraw(address indexed owner,bytes32 budgetName,uint256 amount);
+    event BudgetStatusChanged(address indexed owner,bytes32 budgetName,bool status);
+    
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -44,6 +51,8 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) external returns (bool success) {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
+        require(budget.status,"Budget is disabled");
+        uint256 total = 0;
         require(tokens.length == amounts.length, "Arrays length mismatch");
 
         if (!budget.hasFunds) {
@@ -62,7 +71,9 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
                 budget.tokens.push(token);
             }
             budget.balances[token] += amount;
+            total += amount;
         }
+        emit BudgetTopUp(msg.sender,budgetName,total);
         return true;
     }
 
@@ -71,7 +82,14 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bool allow
     ) external onlyOwner returns (bool status) {
         allowedTokens[token] = allow;
+        emit TokenStatusChanged(token,status);
         return allowedTokens[token];
+    }
+    function changeBudgetStatus(bytes32 budgetName,bool budgetStatus) external returns (bool status){
+         Budget storage budget = userBudgets[msg.sender][budgetName];
+         budget.status = budgetStatus;
+         emit BudgetStatusChanged(msg.sender,budgetName,budgetStatus);
+         return budgetStatus;
     }
 
     function _isStablecoin(address token) internal view returns (bool success) {
@@ -94,6 +112,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         // );
 
         Budget storage budget = userBudgets[msg.sender][budgetName];
+        
         require(!budget.initialized, "Budget name already in use");
         require(tokens.length == amounts.length, "Arrays length mismatch");
 
@@ -118,6 +137,9 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         budget.initialized = true;
         budget.startBudgetCycle = startBudgetCycle;
         budget.hasFunds = true;
+        budget.status = true;
+        userBudgetNames[msg.sender].push(budgetName);
+        emit BudgetCreated(msg.sender,budgetName);
         return true;
     }
 
@@ -127,6 +149,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) external returns (bool updated) {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
+        require(budget.status,"Budget is disabled");
         require(
             _totalBalance(budget) == 0,
             "Cannot update release amount while balance is non-zero"
@@ -147,6 +170,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) external returns (bool updated) {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
+        require(budget.status,"Budget is disabled");
         require(
             _totalBalance(budget) == 0,
             "Cannot update release cycle while balance is non-zero"
@@ -167,6 +191,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         Budget storage budget = userBudgets[msg.sender][budgetName];
 
         require(budget.initialized, "Budget not found");
+        require(budget.status,"Budget is disabled");
         uint256 cycles = _getElapsedCycles(budget);
         require(cycles > 0, "Release cycles must be greater than one");
 
@@ -220,6 +245,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         // Update the last release time
         budget.lastReleaseTime += (cycles * budget.releaseCycle);
         budget.hasFunds = _totalBalance(budget) > 0;
+        emit BudgetWithdraw(msg.sender,budgetName,amountToRelease);
         return true;
     }
 
@@ -320,5 +346,8 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
         return _totalBalance(budget);
+    }
+    function getBudgets() external view returns (bytes32[] memory){
+        return userBudgetNames[msg.sender];
     }
 }
