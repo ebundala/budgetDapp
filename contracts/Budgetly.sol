@@ -82,7 +82,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bool allow
     ) external onlyOwner returns (bool status) {
         allowedTokens[token] = allow;
-        emit TokenStatusChanged(token,status);
+        emit TokenStatusChanged(token,allow);
         return allowedTokens[token];
     }
     function changeBudgetStatus(bytes32 budgetName,bool budgetStatus) external returns (bool status){
