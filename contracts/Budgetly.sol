@@ -57,7 +57,11 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         if (!budget.hasFunds) {
             uint256 cycles = _getElapsedCycles(budget);
-            budget.lastReleaseTime += cycles * budget.releaseCycle; // start computing cycles from last supposed withdraw
+            // Update the last release time to account for elapsed cycles since the last supposed withdrawal.
+            // Using 'budget.lastReleaseTime' ensures that the computation starts from the last recorded release,
+            // rather than the initial 'budget.startBudgetCycle', which represents the start of the budget cycle.
+            // This approach avoids resetting the cycle computation to the beginning and maintains accurate tracking.
+            budget.lastReleaseTime += cycles * budget.releaseCycle;
         }
 
         for (uint256 i = 0; i < tokens.length; i++) {

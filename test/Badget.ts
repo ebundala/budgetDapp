@@ -1208,7 +1208,7 @@ it("Should handle accurate timing for release cycles", async () => {
   
   // Check available balance is 2 ETH (1 ETH per cycle * 2 cycles)
   let availableBalance = await budgetContract.getAvailableBalanceToRelease(budgetName);
-  expect(availableBalance).to.equal(parseEther("1")); // Should be limited to the 1 ETH we deposited
+  expect(availableBalance).to.equal(parseEther("1")); // Available balance cannot exceed the deposited amount (1 ETH), even if more cycles have passed
   
   // Withdraw funds
   await expect(budgetContract.releaseFunds(budgetName, userAddress))
