@@ -595,7 +595,7 @@ describe("Budget contract", () => {
     const cycle = BigInt(200);
     let timestamp = await blockTimestamp();
     const startDelta = 100;
-    await time.increaseTo(BigInt((await timestamp) + BigInt(startDelta)));
+    await time.increaseTo(BigInt((timestamp) + BigInt(startDelta)));
     let availableBalance = await budgetContract.getAvailableBalanceToRelease(
       budgetName
     );
@@ -646,7 +646,7 @@ describe("Budget contract", () => {
     expect(parseEther("23")).to.equal(availableBalance);
 
   });
-  it("Should update release amount of multiple whiteliste token", async () => {
+  it("Should update release amount of multiple whitelisted token", async () => {
     const {
       budgetContract,
       tokenAddress,
@@ -1170,4 +1170,75 @@ await expect(budgetContract.updateReleaseCycle(budgetName,100)).revertedWith("Bu
     expect(budgets.length).to.be.equal(1)
     expect(budgets.at(0)).to.be.equal(budgetName)
   })
+
+ 
+
+it("Should handle accurate timing for release cycles", async () => {
+  const {
+    budgetContract,
+    tokenAddress,
+    blockTimestamp,
+    budgetName,
+    userAddress,
+    budgetToken,
+    budgetContractAddress
+  } = await loadFixture(deployContracts);
+  
+  // Set up parameters
+  const amount = parseEther("1"); // Lock 1 ETH
+  const topupAmount = parseEther("10"); // Will top up with 10 ETH later
+  const releaseAmount = parseEther("1"); // Release 1 ETH per cycle
+  const cycle = BigInt(2); // 2 second cycles
+  
+  // Current timestamp
+  let timestamp = await blockTimestamp();
+  
+  // Lock funds
+  await expect(budgetContract.lockFunds(
+    budgetName,
+    [tokenAddress],
+    [amount],
+    cycle,
+    timestamp, // Start immediately
+    releaseAmount
+  )).to.emit(budgetContract, "BudgetCreated");
+  
+  // Wait 4 seconds (2 cycles)
+  await time.increaseTo(timestamp + BigInt(4));
+  
+  // Check available balance is 2 ETH (1 ETH per cycle * 2 cycles)
+  let availableBalance = await budgetContract.getAvailableBalanceToRelease(budgetName);
+  expect(availableBalance).to.equal(parseEther("1")); // Should be limited to the 1 ETH we deposited
+  
+  // Withdraw funds
+  await expect(budgetContract.releaseFunds(budgetName, userAddress))
+    .to.emit(budgetContract, "BudgetWithdraw");
+  
+  // Verify contract and user balances
+  expect(await budgetToken.balanceOf(budgetContractAddress)).to.equal(parseEther("0"));
+  expect(await budgetToken.balanceOf(userAddress)).to.equal(parseEther("100")); // Back to original 100 ETH
+  
+  // Wait 6 more seconds
+  timestamp = await blockTimestamp();
+  await time.increaseTo(timestamp + BigInt(6));
+  
+  // Top up with 10 ETH
+  await expect(budgetContract.topUpBudget(
+    budgetName,
+    [tokenAddress],
+    [topupAmount]
+  )).to.emit(budgetContract, "BudgetTopUp");
+  
+  // Wait 4 more seconds (2 cycles)
+  timestamp = await blockTimestamp();
+  await time.increaseTo(timestamp + BigInt(4));
+  
+  // Check available balance is 2 ETH (1 ETH per cycle * 2 cycles)
+  availableBalance = await budgetContract.getAvailableBalanceToRelease(budgetName);
+  expect(availableBalance).to.equal(parseEther("2"));
+  
+  // Verify total balance in the budget
+  const totalBalance = await budgetContract.totalBalance(budgetName);
+  expect(totalBalance).to.equal(parseEther("10"));
+});
 });

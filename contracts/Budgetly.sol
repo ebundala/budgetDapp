@@ -57,7 +57,7 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         if (!budget.hasFunds) {
             uint256 cycles = _getElapsedCycles(budget);
-            budget.startBudgetCycle += (cycles + 1) * budget.releaseCycle; // start computing cycles after one cycle has passed
+            budget.lastReleaseTime += cycles * budget.releaseCycle; // start computing cycles from last supposed withdraw
         }
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -85,12 +85,13 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         emit TokenStatusChanged(token,allow);
         return allowedTokens[token];
     }
-    function changeBudgetStatus(bytes32 budgetName,bool budgetStatus) external returns (bool status){
-         Budget storage budget = userBudgets[msg.sender][budgetName];
-         budget.status = budgetStatus;
-         emit BudgetStatusChanged(msg.sender,budgetName,budgetStatus);
-         return budgetStatus;
-    }
+    function changeBudgetStatus(bytes32 budgetName, bool budgetStatus) external returns (bool status){
+    Budget storage budget = userBudgets[msg.sender][budgetName];
+    require(budget.initialized, "Budget not found");
+    budget.status = budgetStatus;
+    emit BudgetStatusChanged(msg.sender, budgetName, budgetStatus);
+    return budgetStatus;
+}
 
     function _isStablecoin(address token) internal view returns (bool success) {
         return allowedTokens[token];
