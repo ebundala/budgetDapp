@@ -118,13 +118,13 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         Budget storage budget = userBudgets[msg.sender][budgetName];
         
-        require(!budget.initialized, "Budget name already in use");
+        require(!budget.initialized, "Budget name in use");
         require(tokens.length == amounts.length, "Arrays length mismatch");
 
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 amount = amounts[i];
-            require(_isStablecoin(token), "Token is not whitelisted");
+            require(_isStablecoin(token), "Token not whitelisted");
             require(amount > 0, "Invalid amount");
 
             IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -154,10 +154,10 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) external returns (bool updated) {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
-        require(budget.status,"Budget is disabled");
+        require(budget.status,"Budget disabled");
         require(
             _totalBalance(budget) == 0,
-            "Cannot update release amount while balance is non-zero"
+            "balance is non-zero"
         );
         require(
             newReleaseAmount > 0,
