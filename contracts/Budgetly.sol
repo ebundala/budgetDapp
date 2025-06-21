@@ -57,7 +57,11 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         if (!budget.hasFunds) {
             uint256 cycles = _getElapsedCycles(budget);
-            budget.startBudgetCycle += (cycles + 1) * budget.releaseCycle; // start computing cycles after one cycle has passed
+            // Update the last release time to account for elapsed cycles since the last supposed withdrawal.
+            // Using 'budget.lastReleaseTime' ensures that the computation starts from the last recorded release,
+            // rather than the initial 'budget.startBudgetCycle', which represents the start of the budget cycle.
+            // This approach avoids resetting the cycle computation to the beginning and maintains accurate tracking.
+            budget.lastReleaseTime += cycles * budget.releaseCycle;
         }
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -85,12 +89,13 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         emit TokenStatusChanged(token,allow);
         return allowedTokens[token];
     }
-    function changeBudgetStatus(bytes32 budgetName,bool budgetStatus) external returns (bool status){
-         Budget storage budget = userBudgets[msg.sender][budgetName];
-         budget.status = budgetStatus;
-         emit BudgetStatusChanged(msg.sender,budgetName,budgetStatus);
-         return budgetStatus;
-    }
+    function changeBudgetStatus(bytes32 budgetName, bool budgetStatus) external returns (bool status){
+    Budget storage budget = userBudgets[msg.sender][budgetName];
+    require(budget.initialized, "Budget not found");
+    budget.status = budgetStatus;
+    emit BudgetStatusChanged(msg.sender, budgetName, budgetStatus);
+    return budgetStatus;
+}
 
     function _isStablecoin(address token) internal view returns (bool success) {
         return allowedTokens[token];
@@ -113,13 +118,13 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
         Budget storage budget = userBudgets[msg.sender][budgetName];
         
-        require(!budget.initialized, "Budget name already in use");
+        require(!budget.initialized, "Budget name in use");
         require(tokens.length == amounts.length, "Arrays length mismatch");
 
         for (uint256 i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint256 amount = amounts[i];
-            require(_isStablecoin(token), "Token is not whitelisted");
+            require(_isStablecoin(token), "Token not whitelisted");
             require(amount > 0, "Invalid amount");
 
             IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -149,10 +154,10 @@ contract Budgetly is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     ) external returns (bool updated) {
         Budget storage budget = userBudgets[msg.sender][budgetName];
         require(budget.initialized, "Budget not found");
-        require(budget.status,"Budget is disabled");
+        require(budget.status,"Budget disabled");
         require(
             _totalBalance(budget) == 0,
-            "Cannot update release amount while balance is non-zero"
+            "balance is non-zero"
         );
         require(
             newReleaseAmount > 0,
