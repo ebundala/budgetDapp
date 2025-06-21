@@ -8,6 +8,11 @@ Welcome to Budgetly testing! This guide will help you set up everything you need
 - **Binance Smart Chain Testnet Account:**
   - You need a wallet (e.g., MetaMask) configured for BSC testnet.
   - If you don’t have one, create a MetaMask wallet and add the BSC testnet network.
+- **Testnet BNB for Gas Fees:**
+  - You need BNB on BSC testnet to pay for transaction gas fees.
+  - Get free BNB from the official BNB Chain testnet faucet:
+    - [https://www.bnbchain.org/en/testnet-faucet](https://www.bnbchain.org/en/testnet-faucet)
+  - Connect your wallet and request BNB. Wait for the transaction to complete and confirm the BNB is in your wallet.
 - **Testnet LINK Token:**
   - Only LINK token on BSC testnet is supported for testing.
   - You will need some testnet LINK tokens in your wallet.
