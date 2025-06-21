@@ -1,0 +1,8 @@
+## Contract addresses
+bsc: 0xEF45042A4B10B7aAEe17170776Ff53D196Ba0647
+bsc-testnet:[0xC6892e6A2FF8FF10F093c7f2e84eD19f25C011F5, 0xF655290831992c2725CbBe75213C476D185c0bF9]
+
+
+## supported tokens
+bsc: []
+bsc-testnet: []
