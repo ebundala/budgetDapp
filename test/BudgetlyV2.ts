@@ -525,7 +525,7 @@ describe("BudgetlyV2", () => {
     });
 
     it("should NOT apply pending update before cycle end", async () => {
-      const { contract, budgetName, addrA, blockTimestamp, signer } =
+      const { contract, budgetName, addrA, blockTimestamp } =
         await loadFixture(deployContracts);
       await contract.createBudget(budgetName, [addrA], [parseEther("50")]);
       const now = await blockTimestamp();
@@ -533,19 +533,21 @@ describe("BudgetlyV2", () => {
       await contract.addTranche(
         budgetName, "t", ReleaseMode.FIXED, cycle, parseEther("10"), now, 0, false, true
       );
+      // Queue an update at time=now; effectiveAt = now + 1 * cycle
       await contract.updateTranche(budgetName, 0, BigInt(400), parseEther("5"));
 
-      // Advance only half a cycle — pending update should NOT be applied
-      await time.increase(cycle);
-      await contract.releaseTrancheFunds(budgetName, 0, signer.address);
+      // Advance to just before the cycle boundary (effectiveAt)
+      await time.increase(cycle - 100n);
 
-      const [, , appliedCycle] = await contract.getTranche(budgetName, 0);
-      // cycle end is at now + cycle + cycle (queued for next boundary after queue time)
-      // with just one cycle elapsed the update may not be applied yet depending on timing.
-      // The key check: the tranche released correctly at the original rate
-      const [hasPending] = await contract.getTrancheUpdate(budgetName, 0);
-      // pending may or may not be cleared depending on timing, original cycle should still work
-      expect(appliedCycle).to.be.oneOf([BigInt(1000), BigInt(400)]);
+      // The pending update should still be queued — verify via view function
+      const [hasPending, pendingCycle] = await contract.getTrancheUpdate(budgetName, 0);
+      expect(hasPending).to.be.true;
+      expect(pendingCycle).to.equal(BigInt(400));
+
+      // The on-chain tranche parameters should still be the originals
+      const [, , currentCycle, currentValue] = await contract.getTranche(budgetName, 0);
+      expect(currentCycle).to.equal(BigInt(1000));
+      expect(currentValue).to.equal(parseEther("10"));
     });
   });
 
